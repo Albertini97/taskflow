@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
 
@@ -9,20 +9,21 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 @router.get("/", response_model=List[schemas.TaskRead])
 def get_tasks(
+    skip: int = 0,
+    limit: int = 50,
+    status: Optional[schemas.TaskStatus] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Returns own tasks + tasks from teams the user belongs to."""
+    """Returns own tasks + tasks from teams the user belongs to. Supports pagination and filtering."""
     team_ids = [m.team_id for m in current_user.team_memberships]
-    return (
-        db.query(models.Task)
-        .filter(
-            (models.Task.owner_id == current_user.id)
-            | (models.Task.team_id.in_(team_ids))
-        )
-        .order_by(models.Task.created_at.desc())
-        .all()
+    query = db.query(models.Task).filter(
+        (models.Task.owner_id == current_user.id)
+        | (models.Task.team_id.in_(team_ids))
     )
+    if status:
+        query = query.filter(models.Task.status == status)
+    return query.order_by(models.Task.created_at.desc()).offset(skip).limit(limit).all()
 
 
 @router.post("/", response_model=schemas.TaskRead, status_code=201)

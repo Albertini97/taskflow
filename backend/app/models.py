@@ -35,6 +35,8 @@ class Task(Base):
     status = Column(Enum(TaskStatus), default=TaskStatus.pending)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True)
+    due_date = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

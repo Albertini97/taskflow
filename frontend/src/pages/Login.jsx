@@ -18,72 +18,57 @@ export default function Login() {
     setError('')
     try {
       const { data } = await api.post('/auth/login', form)
-      // Fetch user profile after login
       const { data: me } = await api.get('/auth/me', {
         headers: { Authorization: `Bearer ${data.access_token}` },
       })
       login(me, data.access_token)
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al iniciar sesión')
+      setError(err.response?.data?.detail || 'Credenciales incorrectas')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 w-full max-w-sm">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Bienvenido</h1>
-          <p className="text-sm text-gray-500 mt-1">Inicia sesión en tu cuenta</p>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative', overflow: 'hidden' }}>
+      {/* Background glow */}
+      <div style={{ position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,109,250,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      <div className="animate-fade-up" style={{ width: '100%', maxWidth: 400 }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 32, letterSpacing: '-0.03em', marginBottom: 8 }}>
+            Task<span style={{ color: 'var(--accent)' }}>Flow</span>
+          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Bienvenido de vuelta</p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-100 text-red-700 text-sm px-4 py-3 rounded-xl mb-5">
-            {error}
-          </div>
-        )}
+        <div className="card" style={{ padding: 32 }}>
+          {error && (
+            <div className="animate-fade-in" style={{ background: 'rgba(250,77,109,0.08)', border: '1px solid rgba(250,77,109,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, color: 'var(--red)', fontSize: 13 }}>
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-              autoComplete="email"
-              placeholder="tu@email.com"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Contraseña</label>
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-          >
-            {loading ? 'Entrando...' : 'Iniciar sesión'}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontFamily: 'Syne', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Email</label>
+              <input className="input" type="email" name="email" value={form.email} onChange={handleChange} required placeholder="tu@email.com" autoComplete="email" />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontFamily: 'Syne', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Contraseña</label>
+              <input className="input" type="password" name="password" value={form.password} onChange={handleChange} required placeholder="••••••••" autoComplete="current-password" />
+            </div>
+            <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8, padding: '12px 18px', fontSize: 14 }}>
+              {loading ? 'Entrando...' : 'Iniciar sesión →'}
+            </button>
+          </form>
+        </div>
 
-        <p className="text-sm text-gray-500 mt-6 text-center">
+        <p style={{ textAlign: 'center', marginTop: 24, color: 'var(--text-dim)', fontSize: 13 }}>
           ¿Sin cuenta?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline font-medium">
+          <Link to="/register" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
             Regístrate gratis
           </Link>
         </p>

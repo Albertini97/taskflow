@@ -34,11 +34,15 @@ class TaskCreate(BaseModel):
     title: str
     description: Optional[str] = ""
     team_id: Optional[int] = None
+    assigned_to: Optional[int] = None
+    due_date: Optional[datetime] = None
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     status: Optional[TaskStatus] = None
+    assigned_to: Optional[int] = None
+    due_date: Optional[datetime] = None
 
 class TaskRead(BaseModel):
     id: int
@@ -47,6 +51,8 @@ class TaskRead(BaseModel):
     status: TaskStatus
     owner_id: int
     team_id: Optional[int]
+    assigned_to: Optional[int]
+    due_date: Optional[datetime]
     created_at: datetime
 
     model_config = {"from_attributes": True}

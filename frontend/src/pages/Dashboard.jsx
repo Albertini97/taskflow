@@ -2,46 +2,31 @@ import { useState, useEffect } from 'react'
 import api from '../api/client'
 import Navbar from '../components/Navbar'
 
-const STATUS_CONFIG = {
-  pending: { label: 'Pendiente', color: 'bg-gray-100 text-gray-600' },
-  in_progress: { label: 'En progreso', color: 'bg-blue-50 text-blue-700' },
-  done: { label: 'Hecho', color: 'bg-green-50 text-green-700' },
+const STATUS = {
+  pending: { label: 'Pendiente', cls: 'badge-pending', dot: '#666680' },
+  in_progress: { label: 'En progreso', cls: 'badge-in_progress', dot: '#7c6dfa' },
+  done: { label: 'Hecho', cls: 'badge-done', dot: '#4dfa9a' },
 }
-
-const FILTERS = ['all', 'pending', 'in_progress', 'done']
-const FILTER_LABELS = { all: 'Todas', pending: 'Pendientes', in_progress: 'En progreso', done: 'Hechas' }
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([])
   const [teams, setTeams] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
-  const [newTask, setNewTask] = useState({ title: '', description: '', team_id: '' })
   const [showForm, setShowForm] = useState(false)
+  const [newTask, setNewTask] = useState({ title: '', description: '', team_id: '', due_date: '' })
   const [submitting, setSubmitting] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editTitle, setEditTitle] = useState('')
 
-  useEffect(() => {
-    Promise.all([fetchTasks(), fetchTeams()])
-  }, [])
+  useEffect(() => { Promise.all([fetchTasks(), fetchTeams()]) }, [])
 
   const fetchTasks = async () => {
-    try {
-      const { data } = await api.get('/tasks/')
-      setTasks(data)
-    } finally {
-      setLoading(false)
-    }
+    try { const { data } = await api.get('/tasks/'); setTasks(data) }
+    finally { setLoading(false) }
   }
-
   const fetchTeams = async () => {
-    try {
-      const { data } = await api.get('/teams/')
-      setTeams(data)
-    } catch {
-      // no teams yet — fine
-    }
+    try { const { data } = await api.get('/teams/'); setTeams(data) } catch {}
   }
 
   const createTask = async (e) => {
@@ -49,219 +34,155 @@ export default function Dashboard() {
     if (!newTask.title.trim()) return
     setSubmitting(true)
     try {
-      const payload = {
-        title: newTask.title,
-        description: newTask.description,
-        team_id: newTask.team_id ? parseInt(newTask.team_id) : null,
-      }
+      const payload = { title: newTask.title, description: newTask.description, team_id: newTask.team_id ? parseInt(newTask.team_id) : null, due_date: newTask.due_date || null }
       const { data } = await api.post('/tasks/', payload)
       setTasks([data, ...tasks])
-      setNewTask({ title: '', description: '', team_id: '' })
+      setNewTask({ title: '', description: '', team_id: '', due_date: '' })
       setShowForm(false)
-    } finally {
-      setSubmitting(false)
-    }
+    } finally { setSubmitting(false) }
   }
 
-  const updateStatus = async (taskId, status) => {
-    const { data } = await api.put(`/tasks/${taskId}`, { status })
-    setTasks(tasks.map((t) => (t.id === taskId ? data : t)))
+  const updateStatus = async (id, status) => {
+    const { data } = await api.put(`/tasks/${id}`, { status })
+    setTasks(tasks.map(t => t.id === id ? data : t))
   }
 
-  const saveTitle = async (taskId) => {
+  const saveTitle = async (id) => {
     if (!editTitle.trim()) return
-    const { data } = await api.put(`/tasks/${taskId}`, { title: editTitle })
-    setTasks(tasks.map((t) => (t.id === taskId ? data : t)))
+    const { data } = await api.put(`/tasks/${id}`, { title: editTitle })
+    setTasks(tasks.map(t => t.id === id ? data : t))
     setEditingId(null)
   }
 
-  const deleteTask = async (taskId) => {
-    await api.delete(`/tasks/${taskId}`)
-    setTasks(tasks.filter((t) => t.id !== taskId))
+  const deleteTask = async (id) => {
+    await api.delete(`/tasks/${id}`)
+    setTasks(tasks.filter(t => t.id !== id))
   }
 
-  const filtered = tasks.filter((t) => filter === 'all' || t.status === filter)
-  const counts = tasks.reduce((acc, t) => ({ ...acc, [t.status]: (acc[t.status] || 0) + 1 }), {})
+  const filtered = filter === 'all' ? tasks : tasks.filter(t => t.status === filter)
+  const counts = { pending: 0, in_progress: 0, done: 0 }
+  tasks.forEach(t => { if (counts[t.status] !== undefined) counts[t.status]++ })
+
+  const isOverdue = (task) => task.due_date && task.status !== 'done' && new Date(task.due_date) < new Date()
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Navbar />
+      <div style={{ position: 'fixed', top: 0, right: 0, width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,109,250,0.04) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-      <main className="max-w-3xl mx-auto px-4 py-8">
+      <main style={{ maxWidth: 960, margin: '0 auto', padding: '40px 24px' }}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="animate-fade-up" style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Mis Tareas</h1>
-            <p className="text-sm text-gray-400 mt-0.5">{tasks.length} tarea{tasks.length !== 1 ? 's' : ''} en total</p>
+            <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 28, letterSpacing: '-0.03em', margin: 0, lineHeight: 1.2 }}>Mis Tareas</h1>
+            <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 13 }}>{tasks.length} tarea{tasks.length !== 1 ? 's' : ''}</p>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition"
-          >
-            + Nueva tarea
+          <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
+            {showForm ? '✕ Cancelar' : '+ Nueva tarea'}
           </button>
         </div>
 
         {/* New task form */}
         {showForm && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6 shadow-sm">
-            <h2 className="text-sm font-medium text-gray-700 mb-4">Nueva tarea</h2>
-            <form onSubmit={createTask} className="space-y-3">
-              <input
-                type="text"
-                placeholder="Título de la tarea *"
-                value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                required
-                autoFocus
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-              />
-              <input
-                type="text"
-                placeholder="Descripción (opcional)"
-                value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-              />
-              {teams.length > 0 && (
-                <select
-                  value={newTask.team_id}
-                  onChange={(e) => setNewTask({ ...newTask, team_id: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-600"
-                >
-                  <option value="">Sin equipo (tarea personal)</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-              )}
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-xl transition disabled:opacity-50"
-                >
-                  {submitting ? 'Creando...' : 'Crear tarea'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="text-gray-500 hover:text-gray-700 text-sm px-4 py-2 rounded-xl hover:bg-gray-100 transition"
-                >
-                  Cancelar
-                </button>
+          <div className="card animate-fade-up" style={{ padding: 24, marginBottom: 24 }}>
+            <h3 style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 15, margin: '0 0 20px', color: 'var(--text)' }}>Nueva tarea</h3>
+            <form onSubmit={createTask} style={{ display: 'grid', gap: 12 }}>
+              <input className="input" placeholder="Título de la tarea *" value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} required autoFocus />
+              <input className="input" placeholder="Descripción (opcional)" value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <input className="input" type="date" value={newTask.due_date} onChange={e => setNewTask({ ...newTask, due_date: e.target.value })} style={{ colorScheme: 'dark' }} />
+                {teams.length > 0 && (
+                  <select className="input" value={newTask.team_id} onChange={e => setNewTask({ ...newTask, team_id: e.target.value })} style={{ cursor: 'pointer' }}>
+                    <option value="">Sin equipo</option>
+                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <button type="submit" disabled={submitting} className="btn btn-primary">{submitting ? 'Creando...' : 'Crear tarea'}</button>
+                <button type="button" onClick={() => setShowForm(false)} className="btn btn-ghost">Cancelar</button>
               </div>
             </form>
           </div>
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {['pending', 'in_progress', 'done'].map((s) => (
-            <div key={s} className="bg-white border border-gray-200 rounded-xl p-4">
-              <p className="text-2xl font-semibold text-gray-900">{counts[s] || 0}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{STATUS_CONFIG[s].label}</p>
+        <div className="animate-fade-up-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+          {Object.entries(STATUS).map(([key, cfg]) => (
+            <div key={key} className="card" style={{ padding: 20, cursor: 'pointer', borderColor: filter === key ? 'var(--accent)' : undefined, background: filter === key ? 'rgba(124,109,250,0.05)' : undefined }} onClick={() => setFilter(filter === key ? 'all' : key)}>
+              <div style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 32, letterSpacing: '-0.03em', lineHeight: 1 }}>{counts[key]}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.dot }} />
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'Syne', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{cfg.label}</span>
+              </div>
             </div>
           ))}
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-xl w-fit">
-          {FILTERS.map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`text-xs px-3 py-1.5 rounded-lg transition font-medium ${
-                filter === f
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {FILTER_LABELS[f]}
+        <div className="animate-fade-up-2" style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+          {[['all', 'Todas'], ['pending', 'Pendientes'], ['in_progress', 'En progreso'], ['done', 'Hechas']].map(([val, label]) => (
+            <button key={val} onClick={() => setFilter(val)} style={{ fontFamily: 'Syne', fontWeight: 600, fontSize: 12, letterSpacing: '0.02em', padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'all 0.2s', background: filter === val ? 'var(--bg-3)' : 'transparent', color: filter === val ? 'var(--text)' : 'var(--text-muted)' }}>
+              {label}
             </button>
           ))}
         </div>
 
         {/* Task list */}
-        {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white border border-gray-100 rounded-2xl h-16 animate-pulse" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <p className="text-3xl mb-3">✓</p>
-            <p className="text-sm">
-              {filter === 'all' ? 'No tienes tareas. ¡Crea una!' : `No hay tareas en "${FILTER_LABELS[filter]}"`}
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {filtered.map((task) => {
-              const cfg = STATUS_CONFIG[task.status]
-              const team = teams.find((t) => t.id === task.team_id)
-              return (
-                <li
-                  key={task.id}
-                  className="bg-white border border-gray-100 rounded-2xl px-5 py-4 flex items-start gap-4 hover:border-gray-200 transition group"
-                >
-                  <div className="flex-1 min-w-0">
-                    {editingId === task.id ? (
-                      <input
-                        autoFocus
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        onBlur={() => saveTitle(task.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveTitle(task.id)
-                          if (e.key === 'Escape') setEditingId(null)
-                        }}
-                        className="text-sm font-medium w-full border-b border-blue-400 outline-none pb-0.5"
-                      />
-                    ) : (
-                      <p
-                        className="text-sm font-medium text-gray-900 truncate cursor-text"
-                        onDoubleClick={() => { setEditingId(task.id); setEditTitle(task.title) }}
-                        title="Doble clic para editar"
-                      >
-                        {task.title}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1">
-                      {team && (
-                        <span className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full">
-                          {team.name}
-                        </span>
+        <div className="animate-fade-up-3">
+          {loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 64 }} />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '64px 0', color: 'var(--text-dim)' }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>✦</div>
+              <p style={{ fontSize: 14 }}>{filter === 'all' ? 'No tienes tareas. ¡Crea una!' : 'Sin tareas en esta categoría'}</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {filtered.map((task, i) => {
+                const overdue = isOverdue(task)
+                const team = teams.find(t => t.id === task.team_id)
+                return (
+                  <div key={task.id} className="card" style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 16, animation: `fadeUp 0.3s ${i * 0.04}s ease both`, borderColor: overdue ? 'rgba(250,77,109,0.2)' : undefined }}>
+                    {/* Status dot */}
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS[task.status].dot, flexShrink: 0, boxShadow: task.status === 'done' ? '0 0 8px rgba(77,250,154,0.5)' : task.status === 'in_progress' ? '0 0 8px rgba(124,109,250,0.5)' : 'none' }} />
+
+                    {/* Title */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {editingId === task.id ? (
+                        <input autoFocus value={editTitle} onChange={e => setEditTitle(e.target.value)} onBlur={() => saveTitle(task.id)} onKeyDown={e => { if (e.key === 'Enter') saveTitle(task.id); if (e.key === 'Escape') setEditingId(null) }} style={{ background: 'transparent', border: 'none', borderBottom: '1px solid var(--accent)', outline: 'none', color: 'var(--text)', fontFamily: 'DM Sans', fontSize: 14, width: '100%', padding: '2px 0' }} />
+                      ) : (
+                        <p onDoubleClick={() => { setEditingId(task.id); setEditTitle(task.title) }} style={{ margin: 0, fontSize: 14, fontWeight: 400, color: task.status === 'done' ? 'var(--text-muted)' : 'var(--text)', textDecoration: task.status === 'done' ? 'line-through' : 'none', cursor: 'text', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title="Doble clic para editar">
+                          {task.title}
+                        </p>
                       )}
-                      {task.description && (
-                        <span className="text-xs text-gray-400 truncate">{task.description}</span>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                        {team && <span style={{ fontSize: 11, color: 'var(--accent)', fontFamily: 'Syne', fontWeight: 600 }}>#{team.name}</span>}
+                        {task.due_date && (
+                          <span style={{ fontSize: 11, color: overdue ? 'var(--red)' : 'var(--text-dim)' }}>
+                            {overdue ? '⚠ ' : ''}
+                            {new Date(task.due_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                          </span>
+                        )}
+                        {task.description && <span style={{ fontSize: 11, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{task.description}</span>}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <select
-                      value={task.status}
-                      onChange={(e) => updateStatus(task.id, e.target.value)}
-                      className={`text-xs font-medium px-3 py-1.5 rounded-lg border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 ${cfg.color}`}
-                    >
-                      {Object.entries(STATUS_CONFIG).map(([val, { label }]) => (
-                        <option key={val} value={val}>{label}</option>
-                      ))}
+
+                    {/* Status select */}
+                    <select value={task.status} onChange={e => updateStatus(task.id, e.target.value)} style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 8px', color: STATUS[task.status].dot, fontFamily: 'Syne', fontWeight: 600, fontSize: 11, cursor: 'pointer', outline: 'none', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      {Object.entries(STATUS).map(([val, { label }]) => <option key={val} value={val}>{label}</option>)}
                     </select>
-                    <button
-                      onClick={() => deleteTask(task.id)}
-                      className="text-gray-200 hover:text-red-400 transition text-xl leading-none opacity-0 group-hover:opacity-100"
-                      title="Eliminar"
-                    >
-                      ×
-                    </button>
+
+                    {/* Delete */}
+                    <button onClick={() => deleteTask(task.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 18, lineHeight: 1, padding: '0 4px', transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--red)'} onMouseLeave={e => e.target.style.color = 'var(--text-dim)'}>×</button>
                   </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
+                )
+              })}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )

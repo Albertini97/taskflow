@@ -1,7 +1,14 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .routers import auth, tasks, teams
+
+# Validate required env vars at startup
+_required = ["SECRET_KEY", "DATABASE_URL"]
+_missing = [k for k in _required if not os.getenv(k)]
+if _missing:
+    raise RuntimeError(f"Missing required environment variables: {', '.join(_missing)}")
 
 # Create all tables on startup (use Alembic for production migrations)
 Base.metadata.create_all(bind=engine)

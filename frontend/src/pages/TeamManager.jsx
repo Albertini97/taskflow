@@ -17,13 +17,8 @@ export default function TeamManager() {
   useEffect(() => { fetchTeams() }, [])
 
   const fetchTeams = async () => {
-    try {
-      const { data } = await api.get('/teams/')
-      setTeams(data)
-      if (data.length > 0 && !selected) setSelected(data[0])
-    } finally {
-      setLoading(false)
-    }
+    try { const { data } = await api.get('/teams/'); setTeams(data); if (data.length > 0 && !selected) setSelected(data[0]) }
+    finally { setLoading(false) }
   }
 
   const showFeedback = (msg, type = 'success') => {
@@ -37,15 +32,10 @@ export default function TeamManager() {
     setCreating(true)
     try {
       const { data } = await api.post('/teams/', { name: newTeamName })
-      setTeams([...teams, data])
-      setSelected(data)
-      setNewTeamName('')
+      setTeams([...teams, data]); setSelected(data); setNewTeamName('')
       showFeedback(`Equipo "${data.name}" creado`)
-    } catch (err) {
-      showFeedback(err.response?.data?.detail || 'Error al crear equipo', 'error')
-    } finally {
-      setCreating(false)
-    }
+    } catch (err) { showFeedback(err.response?.data?.detail || 'Error', 'error') }
+    finally { setCreating(false) }
   }
 
   const inviteMember = async (e) => {
@@ -54,190 +44,134 @@ export default function TeamManager() {
     setInviting(true)
     try {
       const { data } = await api.post(`/teams/${selected.id}/invite`, { email: inviteEmail })
-      // Refresh team to update member list
       const { data: updated } = await api.get(`/teams/${selected.id}`)
-      setTeams(teams.map((t) => (t.id === updated.id ? updated : t)))
-      setSelected(updated)
-      setInviteEmail('')
-      showFeedback(data.message)
-    } catch (err) {
-      showFeedback(err.response?.data?.detail || 'Error al invitar', 'error')
-    } finally {
-      setInviting(false)
-    }
+      setTeams(teams.map(t => t.id === updated.id ? updated : t)); setSelected(updated)
+      setInviteEmail(''); showFeedback(data.message)
+    } catch (err) { showFeedback(err.response?.data?.detail || 'Error', 'error') }
+    finally { setInviting(false) }
   }
 
   const removeMember = async (teamId, userId) => {
     try {
       await api.delete(`/teams/${teamId}/members/${userId}`)
       const { data: updated } = await api.get(`/teams/${teamId}`)
-      setTeams(teams.map((t) => (t.id === updated.id ? updated : t)))
-      setSelected(updated)
+      setTeams(teams.map(t => t.id === updated.id ? updated : t)); setSelected(updated)
       showFeedback('Miembro eliminado')
-    } catch (err) {
-      showFeedback(err.response?.data?.detail || 'Error', 'error')
-    }
+    } catch (err) { showFeedback(err.response?.data?.detail || 'Error', 'error') }
   }
 
   const isOwner = selected && user && selected.owner_id === user.id
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Navbar />
+      <main style={{ maxWidth: 960, margin: '0 auto', padding: '40px 24px' }}>
+        <div className="animate-fade-up" style={{ marginBottom: 32 }}>
+          <h1 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 28, letterSpacing: '-0.03em', margin: 0 }}>Equipos</h1>
+          <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: 13 }}>{teams.length} equipo{teams.length !== 1 ? 's' : ''}</p>
+        </div>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-xl font-semibold text-gray-900 mb-6">Equipos</h1>
-
-        {/* Feedback */}
         {feedback.msg && (
-          <div className={`text-sm px-4 py-3 rounded-xl mb-5 border ${
-            feedback.type === 'error'
-              ? 'bg-red-50 text-red-700 border-red-100'
-              : 'bg-green-50 text-green-700 border-green-100'
-          }`}>
+          <div className="animate-fade-in" style={{ background: feedback.type === 'error' ? 'rgba(250,77,109,0.08)' : 'rgba(77,250,154,0.08)', border: `1px solid ${feedback.type === 'error' ? 'rgba(250,77,109,0.2)' : 'rgba(77,250,154,0.2)'}`, borderRadius: 10, padding: '10px 16px', marginBottom: 20, color: feedback.type === 'error' ? 'var(--red)' : 'var(--green)', fontSize: 13 }}>
             {feedback.msg}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Sidebar: team list + create */}
-          <div className="space-y-4">
-            <form onSubmit={createTeam} className="bg-white border border-gray-200 rounded-2xl p-4">
-              <p className="text-xs font-medium text-gray-500 mb-3 uppercase tracking-wide">Nuevo equipo</p>
-              <input
-                type="text"
-                placeholder="Nombre del equipo"
-                value={newTeamName}
-                onChange={(e) => setNewTeamName(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-              />
-              <button
-                type="submit"
-                disabled={creating}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-xl transition disabled:opacity-50"
-              >
-                {creating ? 'Creando...' : 'Crear equipo'}
-              </button>
-            </form>
+        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 16 }}>
+          {/* Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="card animate-fade-up-1" style={{ padding: 20 }}>
+              <p style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 12px' }}>Nuevo equipo</p>
+              <form onSubmit={createTeam} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input className="input" placeholder="Nombre del equipo" value={newTeamName} onChange={e => setNewTeamName(e.target.value)} />
+                <button type="submit" disabled={creating} className="btn btn-primary" style={{ justifyContent: 'center' }}>{creating ? 'Creando...' : 'Crear'}</button>
+              </form>
+            </div>
 
-            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide px-4 py-3 border-b border-gray-100">
-                Tus equipos
-              </p>
+            <div className="card animate-fade-up-2" style={{ overflow: 'hidden' }}>
+              <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid var(--border)' }}>
+                <p style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: 0 }}>Tus equipos</p>
+              </div>
               {loading ? (
-                <div className="p-4 space-y-2">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="h-9 bg-gray-100 rounded-xl animate-pulse" />
-                  ))}
+                <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[1,2].map(i => <div key={i} className="skeleton" style={{ height: 36 }} />)}
                 </div>
               ) : teams.length === 0 ? (
-                <p className="text-sm text-gray-400 p-4">Sin equipos todavía</p>
+                <p style={{ padding: '20px', color: 'var(--text-dim)', fontSize: 13 }}>Sin equipos</p>
               ) : (
-                <ul>
-                  {teams.map((team) => (
-                    <li key={team.id}>
-                      <button
-                        onClick={() => setSelected(team)}
-                        className={`w-full text-left px-4 py-3 text-sm transition ${
-                          selected?.id === team.id
-                            ? 'bg-blue-50 text-blue-700 font-medium'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span className="flex items-center justify-between">
-                          {team.name}
-                          <span className="text-xs text-gray-400">
-                            {team.members?.length || 0} miembro{(team.members?.length || 0) !== 1 ? 's' : ''}
-                          </span>
-                        </span>
-                      </button>
-                    </li>
+                <div>
+                  {teams.map(team => (
+                    <button key={team.id} onClick={() => setSelected(team)} style={{ width: '100%', textAlign: 'left', padding: '12px 20px', background: selected?.id === team.id ? 'rgba(124,109,250,0.08)' : 'transparent', border: 'none', borderLeft: `2px solid ${selected?.id === team.id ? 'var(--accent)' : 'transparent'}`, cursor: 'pointer', transition: 'all 0.15s', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontFamily: 'DM Sans', fontSize: 14, color: selected?.id === team.id ? 'var(--text)' : 'var(--text-muted)' }}>{team.name}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'Syne' }}>{team.members?.length || 0}</span>
+                    </button>
                   ))}
-                </ul>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Main: team detail */}
-          <div className="md:col-span-2">
+          {/* Main */}
+          <div className="animate-fade-up-3">
             {!selected ? (
-              <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center text-gray-400">
-                <p className="text-3xl mb-3">👥</p>
-                <p className="text-sm">Selecciona un equipo o crea uno nuevo</p>
+              <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--text-dim)' }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>◈</div>
+                <p style={{ fontSize: 14 }}>Selecciona o crea un equipo</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {/* Team header */}
-                <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-1">
-                    <h2 className="text-lg font-semibold text-gray-900">{selected.name}</h2>
-                    {isOwner && (
-                      <span className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full font-medium">
-                        Owner
-                      </span>
-                    )}
+                <div className="card" style={{ padding: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <h2 style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 22, margin: 0, letterSpacing: '-0.02em' }}>{selected.name}</h2>
+                      <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: '4px 0 0' }}>Creado el {new Date(selected.created_at).toLocaleDateString('es-ES')}</p>
+                    </div>
+                    {isOwner && <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', background: 'rgba(250,204,77,0.12)', color: 'var(--amber)', padding: '4px 10px', borderRadius: 20 }}>Owner</span>}
                   </div>
-                  <p className="text-xs text-gray-400">
-                    Creado el {new Date(selected.created_at).toLocaleDateString('es-ES')}
-                  </p>
                 </div>
 
                 {/* Members */}
-                <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide px-5 py-3 border-b border-gray-100">
-                    Miembros ({selected.members?.length || 0})
-                  </p>
+                <div className="card" style={{ overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <p style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: 0 }}>Miembros</p>
+                    <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 12, color: 'var(--text-dim)' }}>{selected.members?.length || 0}</span>
+                  </div>
                   {selected.members?.length === 0 ? (
-                    <p className="text-sm text-gray-400 p-5">Sin miembros</p>
+                    <p style={{ padding: '20px 24px', color: 'var(--text-dim)', fontSize: 13 }}>Sin miembros</p>
                   ) : (
-                    <ul className="divide-y divide-gray-50">
-                      {selected.members?.map((member) => (
-                        <li key={member.id} className="px-5 py-3 flex items-center justify-between">
-                          <div>
-                            <span className="text-sm text-gray-700">Usuario #{member.user_id}</span>
-                            <span className={`ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${
-                              member.role === 'owner'
-                                ? 'bg-amber-50 text-amber-600'
-                                : 'bg-gray-100 text-gray-500'
-                            }`}>
-                              {member.role}
-                            </span>
+                    <div style={{ divide: '1px solid var(--border)' }}>
+                      {selected.members?.map(member => (
+                        <div key={member.id} style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontWeight: 700, fontSize: 12, color: 'var(--text-muted)' }}>
+                              {member.user_id.toString().slice(-2)}
+                            </div>
+                            <div>
+                              <p style={{ margin: 0, fontSize: 14, color: 'var(--text)' }}>Usuario #{member.user_id}</p>
+                              <span className={`badge ${member.role === 'owner' ? '' : 'badge-pending'}`} style={member.role === 'owner' ? { background: 'rgba(250,204,77,0.1)', color: 'var(--amber)', padding: '1px 8px', fontSize: 10 } : { padding: '1px 8px', fontSize: 10 }}>
+                                {member.role}
+                              </span>
+                            </div>
                           </div>
                           {isOwner && member.role !== 'owner' && (
-                            <button
-                              onClick={() => removeMember(selected.id, member.user_id)}
-                              className="text-xs text-gray-300 hover:text-red-400 transition"
-                            >
+                            <button onClick={() => removeMember(selected.id, member.user_id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 13, transition: 'color 0.2s' }} onMouseEnter={e => e.target.style.color = 'var(--red)'} onMouseLeave={e => e.target.style.color = 'var(--text-dim)'}>
                               Eliminar
                             </button>
                           )}
-                        </li>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
                 </div>
 
                 {/* Invite */}
                 {isOwner && (
-                  <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-                      Invitar miembro
-                    </p>
-                    <form onSubmit={inviteMember} className="flex gap-2">
-                      <input
-                        type="email"
-                        placeholder="email@usuario.com"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <button
-                        type="submit"
-                        disabled={inviting}
-                        className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition disabled:opacity-50"
-                      >
-                        {inviting ? '...' : 'Invitar'}
-                      </button>
+                  <div className="card" style={{ padding: 24 }}>
+                    <p style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '0 0 14px' }}>Invitar miembro</p>
+                    <form onSubmit={inviteMember} style={{ display: 'flex', gap: 8 }}>
+                      <input className="input" type="email" placeholder="email@usuario.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
+                      <button type="submit" disabled={inviting} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>{inviting ? '...' : 'Invitar'}</button>
                     </form>
                   </div>
                 )}
