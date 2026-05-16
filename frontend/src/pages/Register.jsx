@@ -29,12 +29,7 @@ export default function Register() {
     }
   }
 
-  const Field = ({ name, label, type = 'text', placeholder, minLength }) => (
-    <div>
-      <label style={{ display: 'block', fontSize: 12, fontFamily: 'Syne', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</label>
-      <input className="input" type={type} name={name} value={form[name]} onChange={handleChange} required placeholder={placeholder} minLength={minLength} />
-    </div>
-  )
+  const labelStyle = { display: 'block', fontSize: 12, fontFamily: 'Syne, sans-serif', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.05em', textTransform: 'uppercase' }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative' }}>
@@ -42,7 +37,7 @@ export default function Register() {
 
       <div className="animate-fade-up" style={{ width: '100%', maxWidth: 400 }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 32, letterSpacing: '-0.03em', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 32, letterSpacing: '-0.03em', marginBottom: 8 }}>
             Task<span style={{ color: 'var(--accent)' }}>Flow</span>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Crea tu cuenta</p>
@@ -55,9 +50,18 @@ export default function Register() {
             </div>
           )}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Field name="email" label="Email" type="email" placeholder="tu@email.com" />
-            <Field name="username" label="Username" placeholder="johndoe" minLength={3} />
-            <Field name="password" label="Contraseña" type="password" placeholder="mínimo 8 caracteres" minLength={8} />
+            <div>
+              <label style={labelStyle}>Email</label>
+              <input className="input" type="email" name="email" value={form.email} onChange={handleChange} required placeholder="tu@email.com" />
+            </div>
+            <div>
+              <label style={labelStyle}>Username</label>
+              <input className="input" type="text" name="username" value={form.username} onChange={handleChange} required placeholder="johndoe" minLength={3} />
+            </div>
+            <div>
+              <label style={labelStyle}>Contraseña</label>
+              <input className="input" type="password" name="password" value={form.password} onChange={handleChange} required placeholder="mínimo 8 caracteres" minLength={8} />
+            </div>
             <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8, padding: '12px 18px', fontSize: 14 }}>
               {loading ? 'Creando cuenta...' : 'Crear cuenta →'}
             </button>
