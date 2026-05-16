@@ -124,15 +124,4 @@ taskflow/
 | POST | `/teams/:id/invite` | ✓ | Invitar usuario por email |
 | DELETE | `/teams/:id/members/:uid` | ✓ | Eliminar miembro |
 
----
 
-## Preguntas de entrevista frecuentes
-
-**¿Por qué JWT y no sesiones de servidor?**
-JWT es stateless: el servidor no guarda nada, escala horizontalmente sin base de datos de sesiones compartida. La desventaja es que no puedes invalidar un token antes de que expire — la solución en producción son refresh tokens con rotación o una blacklist en Redis.
-
-**¿Cómo protegerías esto en producción?**
-HTTPS obligatorio, `SECRET_KEY` larga y aleatoria (nunca en el repo), rate limiting en `/auth/login` para evitar fuerza bruta, Alembic para migraciones en lugar de `create_all`, variables de entorno gestionadas con un gestor de secretos.
-
-**¿Qué añadirías con más tiempo?**
-Refresh tokens, emails reales de invitación (SendGrid / SES), roles más granulares por equipo, tests con pytest + httpx en el backend y Vitest en el frontend, CI/CD con GitHub Actions.
