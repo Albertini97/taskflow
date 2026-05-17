@@ -21,7 +21,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    tasks = relationship("Task", back_populates="owner", cascade="all, delete-orphan")
+    tasks = relationship("Task", foreign_keys="Task.owner_id", back_populates="owner", cascade="all, delete-orphan")
     team_memberships = relationship("TeamMember", back_populates="user", cascade="all, delete-orphan")
     owned_teams = relationship("Team", back_populates="owner")
 
@@ -40,7 +40,7 @@ class Task(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    owner = relationship("User", back_populates="tasks")
+    owner = relationship("User", foreign_keys=[owner_id], back_populates="tasks")
     team = relationship("Team", back_populates="tasks")
 
 
